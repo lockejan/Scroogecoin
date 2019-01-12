@@ -1,6 +1,5 @@
-(ns scroogecoin.core
-  (:gen-class)
-  (use [clojure.java.shell :only [sh]]))
+(ns scroogecoin.core)
+(use '[clojure.java.shell :only [sh]])
 
 (def state (atom {:scrooge-kp {}
                   :blockchain '()
