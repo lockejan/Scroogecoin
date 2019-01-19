@@ -9,3 +9,8 @@ pom.xml.asc
 /.nrepl-port
 .hgignore
 .hg/
+.DS_Store
+.idea/
+CHANGELOG.md 
+LICENSE
+*.pem

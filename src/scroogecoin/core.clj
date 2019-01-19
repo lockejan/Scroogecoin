@@ -1,25 +1,34 @@
 (ns scroogecoin.core)
 (use '[clojure.java.shell :only [sh]])
 
+;TODO implement data model
 (def state (atom {:scrooge-kp {}
                   :blockchain '()
                   :status :valid
                   }))
 
-(defn append! [trans] (println "do something"))
+;TODO insert transaction into the blockchain if it's a valid one
+(defn append! [trans] ())
 
-(defn verify [block sign] (println "do something"))
+;TODO validate blockchain: true if all connected hashes are equal and (user) signatures are valid
+(defn verify [block sign] ())
 
-(defn get-balance [block] (println "not yet"))
+;TODO return all user-balance key-value pairs
+(defn get-balance [block] ())
 
-(defn supervise [] (println "not yet"))
+;TODO init mechanism to determine wether or not the blockchain has been manipulated by Scrooge
+(defn supervise [] ())
 
+(defn key-gen []
+  (sh "openssl" "genrsa" "-aes256" "-passout" "pass:secret" "-out" "./resources/privkey.pem" "2048")
+  (sh "openssl" "rsa" "-pubout" "-in" "./resources/privkey.pem" "-passin" "pass:secret" "-out" "./resources/pubkey.pem"))
+
+;TODO load keypair in repl or atom
 (defn init!
-  "generate keypair and save it to ./resources
-  init atom with empty list for Blockchain and Scrooge-keypair"
+  "(re-)generates Scrooge-keypair and saves it to ./resources
+  initializes empty Blockchain in atom"
   ([]
-    (sh "openssl" "genrsa" "-aes256" "-passout" "pass:secret" "-out" "./resources/privkey.pem" "2048")
-    (sh "openssl" "rsa" "-pubout" "-in" "./resources/privkey.pem" "-passin" "pass:secret" "-out" "./resources/pubkey.pem")
+    (key-gen)
     (reset! state {:scrooge-kp {}
                    :blockchain '()
                    :status :valid
