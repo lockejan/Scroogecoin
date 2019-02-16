@@ -17,14 +17,6 @@
   (-> (hash/sha256 val)
       (bytes->hex)))
 
-;(hash-val "foo")
-
-(def privkey (keys/private-key (io/resource "privkey.pem")))
-(def pubkey (keys/public-key (io/resource "pubkey.pem")))
-
-;(io/resource "privkey.pem")
-(println privkey)
-
 (defn new-block-hash
   ""
   []
@@ -49,11 +41,13 @@
 
 (defn- key-gen! []
   "uses openssl via terminal to generate a keypair for scrooge and saves it to resources folder"
-  ;(sh "openssl" "genrsa" "-aes256" "-passout" "pass:secret" "-out" "./resources/privkey.pem" "2048")
-  (sh "openssl" "genrsa" "-passout" "-out" "./resources/privkey.pem" "2048")
-  (sh "openssl" "rsa" "-pubout" "-in" "./resources/privkey.pem" "-passin" "pass:secret" "-out" "./resources/pubkey.pem"))
+  (sh "openssl" "ecparam" "-name" "prime256v1" "-out" "./resources/ecparams.pem")
+  (sh "openssl" "ecparam" "-in" "./resources/ecparams.pem" "-genkey" "-noout" "-out" "./resources/ec_secret_key.pem")
+  (sh "openssl" "ec" "-in" "./resources/ec_secret_key.pem" "-pubout" "-out" "./resources/ec_public_key.pem"))
 
-;TODO load keypair in repl or atom??????
+;(sh "openssl" "genrsa" "-aes256" "-passout" "pass:secret" "-out" "./resources/secret_key.pem" "2048")
+;(sh "openssl" "rsa" "-pubout" "-in" "./resources/secret_key.pem" "-passin" "pass:secret" "-out" "./resources/public_key.pem")
+
 ;TODO implement data model
 (defn init!
   "(re-)generates Scrooge-key-pair and saves it to ./resources
@@ -62,15 +56,18 @@
     (println "Key-Pair is being created...")
     (key-gen!)
     (reset! state {:blockchain '()
-                   :status :valid
-                   })
+                   :status     :valid
+                   :scrooge    {:skey (keys/private-key (io/resource "ec_secret_key.pem"))
+                                :pkey (keys/public-key (io/resource "ec_public_key.pem"))}})
     (println "Key-Pair creation finished.\nInitial blockchain created!")))
 
-
+;(keys/private-key (io/resource "ecprivkey.pem"))
+;(keys/public-key (io/resource "ecpubkey.pem"))
 ;(println @state)
 
+
 ;TODO In der REPL soll ihr Namespace mit use geladen werden???
-(-main)
+;(-main)
 ;Scenario of task 2.3
 (init!)                                                     ; 1. Init blockchain
 ;(supervise)                                                 ; 2. Start supervise mechanism
