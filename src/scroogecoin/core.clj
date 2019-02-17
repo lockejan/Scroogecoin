@@ -36,8 +36,8 @@
 (defn- scrooge-sign
   [state]
   (let [secret (get-in state [:scrooge :skey])
-        block (str (first (get-in state [:blockchain])))]
-    (assoc-in state [:signature] (dsa/sign block {:key secret :alg :ecdsa+sha256}))))
+        block (hash-key (str (first (get-in state [:blockchain]))))]
+    (assoc-in state [:signature :val] (dsa/sign block {:key secret :alg :ecdsa+sha256}))))
 
 (defn- prep-trx
   [state hash trx]
@@ -74,17 +74,29 @@
   (swap! state append trans))
 
 ;TODO validate blockchain: true if all connected hashes are equal and (user) signatures are valid
-(defn verify
+(defn verify-bc
   "verify"
-  [block sign]
-  ())
+  ([blockchain]
+    (if (empty? blockchain)
+      true
+      (verify-bc (last blockchain) (butlast blockchain))))
+  ([cur-block blockchain]
+    (if (empty? blockchain)
+      true
+      (and (verify-bc (last blockchain) (butlast blockchain))
+           (= (:hashpointer (last blockchain)) (hash-key (str cur-block)))))))
+
+(defn- verify
+  [blockchain signature]
+  (and (verify-bc blockchain)
+       (dsa/verify (hash-key (str (first blockchain))) (get-in signature [:val]) {:key (get-in signature [:pkey]) :alg :ecdsa+sha256})))
 
 (defn get-balance!
   "get-balance of all users on the current blockchain state"
   []
   (let [{:keys [balance]} @state]
     (if (empty? balance)
-      (println "Alle pleite! Wie langweilig.")
+      (println "Alle pleite! Wie langweilig...")
       (println balance))))
 
 ;TODO init mechanism to determine wether or not the blockchain has been manipulated by Scrooge
@@ -93,23 +105,17 @@
   []
   (add-watch state :blockchain
        (fn [key atom old-state new-state]
-         ;(if "")
-         (prn "-- Atom Changed --")
-         ;(prn "key" key)
-         ;(prn "atom" atom)
-         ;(prn "old-state" old-state)
-         ;(prn "new-state" new-state)
-         )))
+         (if (= old-state new-state)
+           (prn "-- Nothing suspicious --")
+           (if (= (inc (count old-state)) (count new-state))
+             (not= old-state (rest new-state))
+             (prn "-- Blockchain Manipulated --"))))))
 
 (defn- key-gen! []
   ;"uses openssl via terminal to generate a keypair for scrooge and saves it to resources folder"
   (sh "openssl" "ecparam" "-name" "prime256v1" "-out" "./resources/ecparams.pem")
   (sh "openssl" "ecparam" "-in" "./resources/ecparams.pem" "-genkey" "-noout" "-out" "./resources/ec_secret_key.pem")
   (sh "openssl" "ec" "-in" "./resources/ec_secret_key.pem" "-pubout" "-out" "./resources/ec_public_key.pem"))
-
-; OLD implementation of keygen using aes256.... caused error when attempting to read in secret_key.pem
-;(sh "openssl" "genrsa" "-aes256" "-passout" "pass:secret" "-out" "./resources/secret_key.pem" "2048")
-;(sh "openssl" "rsa" "-pubout" "-in" "./resources/secret_key.pem" "-passin" "pass:secret" "-out" "./resources/public_key.pem")
 
 ;TODO implement data model
 (defn init!
@@ -119,27 +125,21 @@
     (println "Key-Pair is being created...")
     (key-gen!)
     (reset! state {:blockchain  (list)
-                   :signature   {}
+                   :signature   {:pkey (keys/public-key (io/resource "ec_public_key.pem"))}
                    :status      :valid
-                   :scrooge     {:skey (keys/private-key (io/resource "ec_secret_key.pem"))
-                                 :pkey (keys/public-key (io/resource "ec_public_key.pem"))}})
+                   :scrooge     {:skey (keys/private-key (io/resource "ec_secret_key.pem"))}})
     (println "Key-Pair creation finished.\nInitial blockchain created!")))
-
-;(println @state)
-;(get {:sender :Scrooge :recipient :Philipp :amount 3.14} :sender)
-;(def p {:name "James" :age 26})
-;(update-in p [:age] - 10.2)
-
 
 ;TODO In der REPL soll ihr Namespace mit use geladen werden???
 ;(-main)
 ;Scenarios of task 2.3
-(init!)                                                     ; 1. Init blockchain
-;(supervise)                                                 ; 2. Start supervise mechanism
-(append! {:sender :Scrooge :recipient :Philipp :amount 3.14}) ; 3. Scrooge generates 3.14 coins for Philipp
-(append! {:sender :Philipp :recipient :John :amount 1})   ; 4. Philipp transfers 1 coin to John
-(append! {:sender :Michael :recipient :Philipp :amount 1}) ; 5. Michael attempts to transfer 1 coin to Philipp (fails)
-(append! {:sender :Philipp :recipient :Michael :amount 1}) ; 6. Philipp transfers 1 coin to Michael
-;(verify blockchain)                                         ; 7. Verify blockchain
-;(get-balance @state)                                        ; 8. Get Balance
-;(init!)                                                     ; 9. Scrooge reinitializes the blockchain. Supervisor-mechanism reports manipulation.
+(init!)                                                               ; 1. Init blockchain
+(supervise)                                                          ; 2. Start supervise mechanism
+(append! {:sender :Scrooge :recipient :Philipp :amount 3.14})         ; 3. Scrooge generates 3.14 coins for Philipp
+(append! {:sender :Philipp :recipient :John :amount 1})               ;4. Philipp transfers 1 coin to John
+(append! {:sender :Michael :recipient :Philipp :amount 1})            ;  5. Michael attempts to transfer 1 coin to Philipp (fails)
+(append! {:sender :Philipp :recipient :Michael :amount 1})            ; 6. Philipp transfers 1 coin to Michael
+(let [{:keys [blockchain signature]} @state]
+  (verify blockchain signature))                                      ; 7. Verify blockchain
+(get-balance!)                                                 ; 8. Get Balance
+(init!)                                                              ; 9. Scrooge reinitializes the blockchain. Supervisor-mechanism reports manipulation.
