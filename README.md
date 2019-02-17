@@ -42,13 +42,12 @@ Implementation of Scroogecoin task
 8. Get Balance
    (get-balance!)
 
-(init!)
-
 9. Scrooge reinitializes the blockchain. Supervisor-mechanism reports manipulation.
+   (init!)
 
 ## License
 
-Copyright © 2019 FIXME
+Copyright © 2019 Jan Schmitt
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
