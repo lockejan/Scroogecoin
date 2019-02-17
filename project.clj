@@ -4,4 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.0"]
-                 [buddy/buddy-core "1.4.0"]])
+                 [buddy/buddy-core "1.4.0"]]
+  :main ^:skip-aot scroogecoin.core
+  :target-path "target/%s"
+  :profiles {:uberjar {:aot :all}})
