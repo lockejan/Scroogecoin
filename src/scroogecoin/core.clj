@@ -69,7 +69,7 @@
     :else state))
 
 (defn append!
-  "append"
+  "appends a valid transaktion to the blockchain"
   [trans]
   (swap! state append trans))
 
@@ -86,7 +86,8 @@
       (and (verify-bc (last blockchain) (butlast blockchain))
            (= (:hashpointer (last blockchain)) (hash-key (str cur-block)))))))
 
-(defn- verify
+(defn verify
+  "expects blockchain and signature. signature contains is a map and contains public key and the signature"
   [blockchain signature]
   (and (verify-bc blockchain)
        (dsa/verify (hash-key (str (first blockchain))) (get-in signature [:val]) {:key (get-in signature [:pkey]) :alg :ecdsa+sha256})))
@@ -104,7 +105,7 @@
   "init mechanism to determine wether or not the blockchain has been manipulated by Scrooge"
   []
   (add-watch state :blockchain
-       (fn [key atom old-state new-state]
+       (fn [old-state new-state]
          (if (= old-state new-state)
            (prn "-- Nothing suspicious --")
            (if (= (inc (count old-state)) (count new-state))
@@ -133,13 +134,13 @@
 ;TODO In der REPL soll ihr Namespace mit use geladen werden???
 ;(-main)
 ;Scenarios of task 2.3
-(init!)                                                               ; 1. Init blockchain
-(supervise)                                                          ; 2. Start supervise mechanism
-(append! {:sender :Scrooge :recipient :Philipp :amount 3.14})         ; 3. Scrooge generates 3.14 coins for Philipp
-(append! {:sender :Philipp :recipient :John :amount 1})               ;4. Philipp transfers 1 coin to John
-(append! {:sender :Michael :recipient :Philipp :amount 1})            ;  5. Michael attempts to transfer 1 coin to Philipp (fails)
-(append! {:sender :Philipp :recipient :Michael :amount 1})            ; 6. Philipp transfers 1 coin to Michael
-(let [{:keys [blockchain signature]} @state]
-  (verify blockchain signature))                                      ; 7. Verify blockchain
-(get-balance!)                                                 ; 8. Get Balance
-(init!)                                                              ; 9. Scrooge reinitializes the blockchain. Supervisor-mechanism reports manipulation.
+;(init!)                                                               ; 1. Init blockchain
+;(supervise)                                                          ; 2. Start supervise mechanism
+;(append! {:sender :Scrooge :recipient :Philipp :amount 3.14})         ; 3. Scrooge generates 3.14 coins for Philipp
+;(append! {:sender :Philipp :recipient :John :amount 1})               ;4. Philipp transfers 1 coin to John
+;(append! {:sender :Michael :recipient :Philipp :amount 1})            ;  5. Michael attempts to transfer 1 coin to Philipp (fails)
+;(append! {:sender :Philipp :recipient :Michael :amount 1})            ; 6. Philipp transfers 1 coin to Michael
+;(let [{:keys [blockchain signature]} @state]
+;  (verify blockchain signature))                                      ; 7. Verify blockchain
+;(get-balance!)                                                 ; 8. Get Balance
+;(init!)                                                              ; 9. Scrooge reinitializes the blockchain. Supervisor-mechanism reports manipulation.
