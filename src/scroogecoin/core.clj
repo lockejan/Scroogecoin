@@ -28,55 +28,46 @@
   (update-in state [:balance (get trx :sender)] - (get trx :amount)))
 
 (defn- update-balance
-  ;TODO consider more cases e.g. update-in (when not empty), assoc-in (when empty)
-  ""
   [state trx]
-  ;(println (get-in state [:balance (first (get trx :recipient))]))
   (cond
-    (= (get trx :sender) "Scrooge") (balance-recipient state trx)
+    (= (get trx :sender) :Scrooge) (balance-recipient state trx)
     :else (balance-sender (balance-recipient state trx) trx)))
 
 (defn- scrooge-sign
   [state]
   (let [secret (get-in state [:scrooge :skey])
         block (str (first (get-in state [:blockchain])))]
-    ;(println "5 " state)
     (assoc-in state [:signature] (dsa/sign block {:key secret :alg :ecdsa+sha256}))))
 
 (defn- prep-trx
   [state hash trx]
-  ;(println "4 ")
   (let [bc (get state :blockchain)]
     (scrooge-sign (update-balance (assoc-in state [:blockchain] (conj bc {:hashpointer hash
                                                                           :trx         trx})) trx))))
 
 (defn- hash-trx
   [state trx]
-  ;(println "3 ")
   (let [bc (get state :blockchain)]
-    ;(println "bc empty?" (empty? bc))
     (cond
       (empty? bc) (prep-trx state nil trx)
       :else (prep-trx state (hash-key (str (first (get-in state [:blockchain])))) trx))))
 
 (defn- trx-check
-  "check if sender owes enough coins"
+  "check if sender holds enough coins"
   [state trx]
-  (println "2 " (get-in state [:balance] (get trx :sender)))
   (cond
     (= (get trx :sender) :Scrooge) true
-    (>= (get-in state [:balance] (get trx :sender)) (get trx :amount)) true
+    (nil? (get-in state [:balance (get trx :sender)])) false
+    (>= (get-in state [:balance (get trx :sender)]) (get trx :amount)) true
     :else false))
 
 (defn- append
   [state trx]
-  ;(println "1 " state)
   (cond
     (empty? trx) state
     (and (> (:amount trx) 0) (trx-check state trx)) (hash-trx state trx)
     :else state))
 
-;TODO insert transaction into the blockchain if it's a valid one
 (defn append!
   "append"
   [trans]
@@ -88,11 +79,13 @@
   [block sign]
   ())
 
-;TODO return all user-balance key-value pairs
-(defn get-balance
+(defn get-balance!
   "get-balance of all users on the current blockchain state"
   []
-  ())
+  (let [{:keys [balance]} @state]
+    (if (empty? balance)
+      (println "Alle pleite! Wie langweilig.")
+      (println balance))))
 
 ;TODO init mechanism to determine wether or not the blockchain has been manipulated by Scrooge
 (defn supervise
@@ -133,7 +126,10 @@
     (println "Key-Pair creation finished.\nInitial blockchain created!")))
 
 ;(println @state)
-(get {:sender :Scrooge :recipient :Philipp :amount 3.14} :sender)
+;(get {:sender :Scrooge :recipient :Philipp :amount 3.14} :sender)
+;(def p {:name "James" :age 26})
+;(update-in p [:age] - 10.2)
+
 
 ;TODO In der REPL soll ihr Namespace mit use geladen werden???
 ;(-main)
@@ -141,9 +137,9 @@
 (init!)                                                     ; 1. Init blockchain
 ;(supervise)                                                 ; 2. Start supervise mechanism
 (append! {:sender :Scrooge :recipient :Philipp :amount 3.14}) ; 3. Scrooge generates 3.14 coins for Philipp
-;(append! {:sender "Philipp" :recipient "John" :amount 1})   ; 4. Philipp transfers 1 coin to John
-;(append! {:sender "Michael" :recipient "Philipp" :amount 1}) ; 5. Michael attempts to transfer 1 coin to Philipp (fails)
-;(append! {:sender "Philipp" :recipient "Michael" :amount 1}) ; 6. Philipp transfers 1 coin to Michael
+(append! {:sender :Philipp :recipient :John :amount 1})   ; 4. Philipp transfers 1 coin to John
+(append! {:sender :Michael :recipient :Philipp :amount 1}) ; 5. Michael attempts to transfer 1 coin to Philipp (fails)
+(append! {:sender :Philipp :recipient :Michael :amount 1}) ; 6. Philipp transfers 1 coin to Michael
 ;(verify blockchain)                                         ; 7. Verify blockchain
 ;(get-balance @state)                                        ; 8. Get Balance
 ;(init!)                                                     ; 9. Scrooge reinitializes the blockchain. Supervisor-mechanism reports manipulation.
