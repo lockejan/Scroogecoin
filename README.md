@@ -1,13 +1,11 @@
 # Scroogecoin
 
-Maintainer: Jan Schmitt
+Maintainer: Jan Schmitt \
 Login: lockejan
 
 ---
 
-# scroogecoin
-
-Implementation of Scroogecoin task
+Implementation of a custom Scroogecoin assignment to fullfill the listed examples below.
 
 ## Installation
 
@@ -17,6 +15,19 @@ Implementation of Scroogecoin task
 3. Enter **"lein repl"** in your terminal and hit enter. ;)
 
 ## Usage
+
+There are different functions available:
+
+- (init!)
+- (supervise)
+- (append!)
+- (verify blockchain signature)
+- (get-balance!)
+
+Further informations are given via docstrings.
+Example call for docstrings: (doc foo)
+
+## Example
 
 1. Init blockchain \
    (init!)
