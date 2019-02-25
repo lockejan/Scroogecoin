@@ -9,7 +9,7 @@
 (defn -main
   "welcoming main"
   [& args]
-  (println "Tach auch. Willkommen auf der Blockchain."))
+  (println "G'day. Welcome on the blockchain."))
 
 (def state (atom {}))
 
@@ -73,9 +73,8 @@
   [trans]
   (swap! state append trans))
 
-;TODO validate blockchain: true if all connected hashes are equal and (user) signatures are valid
 (defn verify-bc
-  "verify"
+  "validate blockchain: true if all connected hashes are equal and (user) signatures are valid"
   ([blockchain]
     (if (empty? blockchain)
       true
@@ -100,7 +99,7 @@
       (println "Alle pleite! Wie langweilig...")
       (println balance))))
 
-;TODO init mechanism to determine wether or not the blockchain has been manipulated by Scrooge
+;TODO refine init mechanism to determine wether or not the blockchain has been manipulated by Scrooge
 (defn supervise
   "init mechanism to determine wether or not the blockchain has been manipulated by Scrooge"
   []
@@ -112,13 +111,12 @@
              (not= old-state (rest new-state))
              (prn "-- Blockchain Manipulated --"))))))
 
-(defn- key-gen! []
-  ;"uses openssl via terminal to generate a keypair for scrooge and saves it to resources folder"
+(defn- key-gen!
+  []
   (sh "openssl" "ecparam" "-name" "prime256v1" "-out" "./resources/ecparams.pem")
   (sh "openssl" "ecparam" "-in" "./resources/ecparams.pem" "-genkey" "-noout" "-out" "./resources/ec_secret_key.pem")
   (sh "openssl" "ec" "-in" "./resources/ec_secret_key.pem" "-pubout" "-out" "./resources/ec_public_key.pem"))
 
-;TODO implement data model
 (defn init!
   "(re-)generates Scrooge-key-pair and saves it to ./resources
   initializes empty blockchain in atom"
@@ -131,9 +129,9 @@
                    :scrooge     {:skey (keys/private-key (io/resource "ec_secret_key.pem"))}})
     (println "Key-Pair creation finished.\nInitial blockchain created!")))
 
-;TODO In der REPL soll ihr Namespace mit use geladen werden???
+
 ;(-main)
-;Scenarios of task 2.3
+;Example Scenarios
 ;(init!)                                                               ; 1. Init blockchain
 ;(supervise)                                                          ; 2. Start supervise mechanism
 ;(append! {:sender :Scrooge :recipient :Philipp :amount 3.14})         ; 3. Scrooge generates 3.14 coins for Philipp
